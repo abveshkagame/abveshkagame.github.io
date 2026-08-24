@@ -115,9 +115,35 @@
             return object.movie || {};
         }
 
-        function kpId() {
+        function kpInfo() {
             var card = movie();
-            return card.kinopoisk_id || card.kp_id || card.filmId || card.kinopoiskId || '';
+            var fields = [
+                ['kinopoisk_id', card.kinopoisk_id],
+                ['kp_id', card.kp_id],
+                ['filmId', card.filmId],
+                ['kinopoiskId', card.kinopoiskId]
+            ];
+
+            log('Collaps KP fields', {
+                kinopoisk_id: card.kinopoisk_id,
+                kp_id: card.kp_id,
+                filmId: card.filmId,
+                kinopoiskId: card.kinopoiskId
+            });
+
+            for (var i = 0; i < fields.length; i++) {
+                if (fields[i][1]) {
+                    return {
+                        id: fields[i][1],
+                        path: fields[i][0]
+                    };
+                }
+            }
+
+            return {
+                id: '',
+                path: ''
+            };
         }
 
         function title() {
@@ -249,6 +275,31 @@
             });
         }
 
+        function logCollapsShape() {
+            if (extract && extract.playlist && extract.playlist.seasons) {
+                var seasons = extract.playlist.seasons;
+                var episodes = 0;
+                var firstHls = '';
+
+                seasons.forEach(function (season) {
+                    if (season.episodes) {
+                        episodes += season.episodes.length;
+                        if (!firstHls && season.episodes[0]) firstHls = season.episodes[0].hls;
+                    }
+                });
+
+                log('Collaps type: series, seasons=' + seasons.length + ', episodes=' + episodes);
+                log('Collaps raw HLS URL: ' + (firstHls || 'not found'));
+            }
+            else if (extract && extract.source) {
+                log('Collaps type: movie');
+                log('Collaps raw HLS URL: ' + (extract.source.hls || 'not found'));
+            }
+            else {
+                log('Collaps type: unknown');
+                log('Collaps raw HLS URL: not found');
+            }
+        }
         function buildFilter() {
             var select = [];
             var seasons = extract && extract.playlist && extract.playlist.seasons ? extract.playlist.seasons : [];
@@ -296,6 +347,8 @@
 
         function play(element) {
             var playlist = [];
+
+            log('Collaps HLS URL: ' + element.file);
             var first = {
                 url: element.file,
                 timeline: element.timeline,
@@ -384,7 +437,10 @@
         }
 
         function load() {
-            var id = kpId();
+            var kp = kpInfo();
+            var id = kp.id;
+
+            log('Collaps KP ID: ' + (id || 'not found') + (kp.path ? ' from ' + kp.path : ''));
 
             if (!id) {
                 empty(lang('collaps_no_kp', 'Для Collaps нужен kinopoisk_id в карточке'));
@@ -394,8 +450,11 @@
 
             network.clear();
             network.timeout(15000);
-            network.silent(COLLAPS_BASE + 'kp/' + encodeURIComponent(id), function (str) {
+            var apiUrl = COLLAPS_BASE + 'kp/' + encodeURIComponent(id);
+            log('Collaps API URL: ' + apiUrl);
+            network.silent(apiUrl, function (str) {
                 extract = parsePlayerObject(str);
+                log('Collaps makePlayer: ' + (extract ? 'yes' : 'no'));
 
                 if (!extract) {
                     empty(lang('collaps_no_streams', 'Collaps не вернул воспроизводимые потоки'));
@@ -405,6 +464,7 @@
 
                 choice.season = Math.max(0, choice.season || 0);
                 buildFilter();
+                logCollapsShape();
                 items = buildItems();
 
                 if (!items.length) {
@@ -449,6 +509,7 @@
                 }
 
                 buildFilter();
+                logCollapsShape();
                 items = buildItems();
                 appendList(items);
             };
@@ -597,3 +658,8 @@
 
     bootstrap();
 })();
+
+
+
+
+
