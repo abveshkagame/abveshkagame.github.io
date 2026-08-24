@@ -5,7 +5,7 @@
     window.lampa_combo_online_ready = true;
 
     var FILMIX_URL = 'https://lampaplugins.github.io/store/fx.js';
-    var REZKA_URL  = 'https://gist.githubusercontent.com/ABurnglv/5a9adecdc76d6973a2601febcf1c2c1e/raw/rezka.js';
+    var REZKA_URL  = 'https://abveshkagame.github.io/rezka-source.js?v=2';
 
     // Наше рабочее зеркало Rezka
     var REZKA_DOMAIN = 'https://tv.hdrezka.inc';
